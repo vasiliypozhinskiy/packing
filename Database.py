@@ -103,10 +103,13 @@ class PackingDB:
 
     @db_connection
     def insert_new_root_into_table_tree(self, name_of_root):
+        """Return True if new root recorded, else False"""
         self.cursor.execute(f"""SELECT id FROM tree WHERE content = '{name_of_root}'""")
         if not self.cursor.fetchone():
             self.cursor.execute(f"""INSERT INTO tree (content) VALUES ('{name_of_root}') """)
-        self.connection.commit()
+            self.connection.commit()
+            return True
+        return False
 
     @db_connection
     def insert_new_item_into_table_tree(self, parent_id, content) -> bool:
@@ -123,10 +126,12 @@ class PackingDB:
         return False
 
     @db_connection
-    def check_db_tree(self):
-        self.cursor.execute(f"""SELECT * FROM tree""")
+    def get_table_tree(self):
+        self.cursor.execute(f"""SELECT * FROM tree ORDER BY parent_id""")
+        content = []
         for row in self.cursor:
-            print(row)
+            content.append(row)
+        return content
 
     @db_connection
     def get_roots_from_tree(self) -> list:
@@ -138,13 +143,20 @@ class PackingDB:
 
     @db_connection
     def get_children_of_node(self, node_id) -> list:
-        self.cursor.execute(f"""SELECT path, content FROM tree WHERE path LIKE(
+        self.cursor.execute(f"""SELECT id FROM tree WHERE path LIKE(
                                 SELECT path || '%.' FROM tree WHERE id = {node_id}) ORDER BY path""")
-        children = []
+        children_ids = []
 
-        for path, content in self.cursor:
-            children.append((path, eval(content)))
-        return children
+        for children_id in self.cursor:
+            children_ids.append(children_id[0])
+        return children_ids
+
+    @db_connection
+    def get_data_by_id(self, element_id):
+        self.cursor.execute(f"""SELECT * FROM tree WHERE id = {element_id}""")
+        data = self.cursor.fetchone()
+        if data:
+            return data
 
     @db_connection
     def drop_table_tree(self):
@@ -152,11 +164,12 @@ class PackingDB:
         self.connection.commit()
 
     @db_connection
-    def get_path_by_id(self, element_id):
-        self.cursor.execute(f"""SELECT path FROM tree WHERE id = {element_id}""")
-        path = self.cursor.fetchone()
-        if path:
-            return path[0]
+    def get_id_by_content(self, parent_id, content):
+        self.cursor.execute(f"""SELECT id FROM tree WHERE parent_id = {parent_id} AND content = :content""",
+                            {"content": str(content)})
+        item_id = self.cursor.fetchone()
+        if item_id:
+            return item_id[0]
 
     @db_connection
     def delete_element(self, path):
@@ -175,6 +188,8 @@ if __name__ != "__main__":
     db.insert_new_item_into_table_tree(2, {'title': 'Яблоко', 'amount': 1, 'weight': 100})
     db.insert_new_item_into_table_tree(2, {'title': 'Творог', 'amount': 2, 'weight': 100})
     db.insert_new_item_into_table_tree(1, {'title': 'Йод', 'amount': 3, 'weight': 100})
+    db.insert_new_root_into_table_tree("Одежда")
+
 
 if __name__ == "__main__":
     db = PackingDB("test.db")
@@ -186,11 +201,17 @@ if __name__ == "__main__":
     db.insert_new_item_into_table_tree(2, {'title': 'Яблоко', 'amount': 2, 'weight': 100})
     db.insert_new_item_into_table_tree(2, {'title': 'Творог', 'amount': 3, 'weight': 100})
     db.insert_new_item_into_table_tree(1, {'title': 'Йод', 'amount': 5, 'weight': 100})
+    db.insert_new_root_into_table_tree("Одежда")
+    db.insert_new_item_into_table_tree(3, {'title': 'Носки', 'amount': 4, 'weight': 100})
+    db.insert_new_item_into_table_tree(3, {'title': 'Футболка', 'amount': 3, 'weight': 100})
+    db.insert_new_item_into_table_tree(3, {'title': 'Кепка', 'amount': 1, 'weight': 100})
 
-    # print(db.get_roots_from_tree())
-    db.delete_element(".2.")
-    db.check_db_tree()
-    # print(db.get_children_of_node(2))
+    print(db.get_roots_from_tree())
+    # db.delete_element(".2.")
+    print(db.get_table_tree())
+    print(db.get_children_of_node(2))
+    print(db.get_data_by_id(2))
+    print(db.get_id_by_content(3, {'title': 'Кепка', 'amount': 1, 'weight': 100}))
 
 
 
