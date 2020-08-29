@@ -19,6 +19,14 @@ class PackingDB:
         self.db_path = path
 
     @db_connection
+    def get_tables_names_from_db(self, db_name):
+        self.cursor.execute(f"""SELECT name FROM sqlite_master WHERE type='table';""")
+        table_names = []
+        for row in self.cursor.fetchone():
+            table_names.append(row)
+        return table_names
+
+    @db_connection
     def create_table_tree(self):
         self.cursor.execute(f"""CREATE TABLE IF NOT EXISTS tree
 (
@@ -177,18 +185,24 @@ class PackingDB:
                             {"path": path})
         self.connection.commit()
 
+    @db_connection
+    def update_element(self, path, new_content):
+        self.cursor.execute(f"""UPDATE tree SET content = :new_content WHERE path = :path""",
+                            {"path": path, "new_content": str(new_content)})
+        self.connection.commit()
+
 
 if __name__ != "__main__":
     db = PackingDB("packing.db")
-    db.drop_table_tree()
-    db.create_table_tree()
-    db.insert_new_root_into_table_tree("Аптечка")
-    db.insert_new_root_into_table_tree("Еда")
-    db.insert_new_item_into_table_tree(2, {'title': 'Кекс', 'amount': 5, 'weight': 100})
-    db.insert_new_item_into_table_tree(2, {'title': 'Яблоко', 'amount': 1, 'weight': 100})
-    db.insert_new_item_into_table_tree(2, {'title': 'Творог', 'amount': 2, 'weight': 100})
-    db.insert_new_item_into_table_tree(1, {'title': 'Йод', 'amount': 3, 'weight': 100})
-    db.insert_new_root_into_table_tree("Одежда")
+    # db.drop_table_tree()
+    # db.create_table_tree()
+    # db.insert_new_root_into_table_tree("Аптечка")
+    # db.insert_new_root_into_table_tree("Еда")
+    # db.insert_new_item_into_table_tree(2, {'title': 'Кекс', 'amount': 5, 'weight': 100})
+    # db.insert_new_item_into_table_tree(2, {'title': 'Яблоко', 'amount': 1, 'weight': 100})
+    # db.insert_new_item_into_table_tree(2, {'title': 'Творог', 'amount': 2, 'weight': 100})
+    # db.insert_new_item_into_table_tree(1, {'title': 'Йод', 'amount': 3, 'weight': 100})
+    # db.insert_new_root_into_table_tree("Одежда")
 
 
 if __name__ == "__main__":
@@ -212,6 +226,7 @@ if __name__ == "__main__":
     print(db.get_children_of_node(2))
     print(db.get_data_by_id(2))
     print(db.get_id_by_content(3, {'title': 'Кепка', 'amount': 1, 'weight': 100}))
+    print(db.get_tables_names_from_db("test"))
 
 
 

@@ -18,6 +18,7 @@ class Application(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
         self.Add_item_button.clicked.connect(self.add_item)
         self.Delete_button.clicked.connect(self.delete_selected_item)
         self.treeWidget.clicked.connect(self.select_item)
+        self.treeWidget.itemChanged.connect(self.change_item)
 
     def add_category(self):
         dialog = AddCategoryWindow()
@@ -39,15 +40,19 @@ class Application(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
             if data[1] is None:
                 element = QtWidgets.QTreeWidgetItem([data[3]])
                 element.setData(0, 0x0100, {"id": data[0], "path": data[2]})
+                element.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled |
+                                 QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
                 self.treeWidget.addTopLevelItem(element)
             else:
                 data_dict = eval(data[3])
                 element = QtWidgets.QTreeWidgetItem([str(data_dict["title"]), str(data_dict["amount"]),
-                                                    str(data_dict["amount"] * data_dict["weight"])])
+                                                    str(data_dict["weight"])])
                 element.setData(0, 0x100, {"id": data[0], "parent_id": data[1], "path": data[2]})
                 element.setTextAlignment(0, QtCore.Qt.AlignLeft)
                 element.setTextAlignment(1, QtCore.Qt.AlignHCenter)
                 element.setTextAlignment(2, QtCore.Qt.AlignHCenter)
+                element.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled |
+                                 QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
                 parent_name = Database.db.get_data_by_id(data[1])[3]
                 self.treeWidget.findItems(parent_name, QtCore.Qt.MatchExactly, 0)[0].addChild(element)
 
@@ -78,7 +83,7 @@ class Application(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
         data = Database.db.get_data_by_id(item_id)
         data_dict = eval(data[3])
         element = QtWidgets.QTreeWidgetItem([str(data_dict["title"]), str(data_dict["amount"]),
-                                             str(data_dict["amount"] * data_dict["weight"])])
+                                             str(data_dict["weight"])])
         element.setData(0, 0x100, {"id": data[0], "parent_id": data[1], "path": data[2]})
         element.setTextAlignment(0, QtCore.Qt.AlignLeft)
         element.setTextAlignment(1, QtCore.Qt.AlignHCenter)
@@ -86,6 +91,18 @@ class Application(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
         parent_name = Database.db.get_data_by_id(data[1])[3]
         self.treeWidget.findItems(parent_name, QtCore.Qt.MatchExactly, 0)[0].addChild(element)
 
+        self.lcd_number_update()
+
+    def change_item(self):
+        path = self.treeWidget.currentItem().data(0, 0x100)["path"]
+        if not self.treeWidget.currentItem().parent():
+            title = self.treeWidget.currentItem().text(0)
+            Database.db.update_element(path, title)
+        else:
+            title = self.treeWidget.currentItem().text(0)
+            amount = int(self.treeWidget.currentItem().text(1))
+            weight = int(self.treeWidget.currentItem().text(2))
+            Database.db.update_element(path, {"title": title, "amount": amount, "weight": weight})
         self.lcd_number_update()
 
     def delete_selected_item(self):
@@ -101,6 +118,7 @@ class Application(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
     def select_item(self):
         self.treeWidget.currentItem().setSelected(False)
         if self.treeWidget.currentItem().parent():
+            self.treeWidget.blockSignals(True)
             if self.treeWidget.currentItem().data(0, 0x200):
                 self.treeWidget.currentItem().setData(0, 0x200, False)
                 self.treeWidget.currentItem().setForeground(0, self.ColorForNotSelectedItem)
@@ -125,6 +143,7 @@ class Application(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
                 iterator += 1
 
             self.treeWidget.update()
+            self.treeWidget.blockSignals(False)
 
     def show_system_message(self, text):
         try:

@@ -28,7 +28,7 @@ class Ui_add_item(object):
         self.label.setGeometry(QtCore.QRect(20, 10, 161, 20))
         self.label.setObjectName("label")
         self.tableWidget = QtWidgets.QTableWidget(add_item)
-        self.tableWidget.setGeometry(QtCore.QRect(20, 70, 570, 57))
+        self.tableWidget.setGeometry(QtCore.QRect(20, 70, 561, 51))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)

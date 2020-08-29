@@ -53,10 +53,13 @@
      <string notr="true">QTreeWidget {Color: red}</string>
     </property>
     <property name="editTriggers">
-     <set>QAbstractItemView::NoEditTriggers</set>
+     <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
     </property>
     <property name="dragDropMode">
      <enum>QAbstractItemView::NoDragDrop</enum>
+    </property>
+    <property name="selectionMode">
+     <enum>QAbstractItemView::NoSelection</enum>
     </property>
     <property name="sortingEnabled">
      <bool>true</bool>
@@ -64,6 +67,9 @@
     <property name="columnCount">
      <number>0</number>
     </property>
+    <attribute name="headerStretchLastSection">
+     <bool>false</bool>
+    </attribute>
    </widget>
    <widget class="QComboBox" name="comboBox">
     <property name="geometry">
