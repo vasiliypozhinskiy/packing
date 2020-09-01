@@ -46,6 +46,11 @@
       <verstretch>0</verstretch>
      </sizepolicy>
     </property>
+    <property name="font">
+     <font>
+      <pointsize>14</pointsize>
+     </font>
+    </property>
     <property name="cursor" stdset="0">
      <cursorShape>ArrowCursor</cursorShape>
     </property>
@@ -76,7 +81,7 @@
      <rect>
       <x>12</x>
       <y>50</y>
-      <width>501</width>
+      <width>511</width>
       <height>22</height>
      </rect>
     </property>
@@ -84,7 +89,7 @@
    <widget class="QToolButton" name="toolButton">
     <property name="geometry">
      <rect>
-      <x>520</x>
+      <x>530</x>
       <y>50</y>
       <width>31</width>
       <height>21</height>
