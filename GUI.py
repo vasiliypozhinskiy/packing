@@ -67,23 +67,26 @@ class Application(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
 
     def create_tree(self):
         self.treeWidget.clear()
-        header_item = QtWidgets.QTreeWidgetItem([" ", "Количество", "Общий вес"])
+        header_item = QtWidgets.QTreeWidgetItem([" ", "Кол-во", "Вес"])
         header_item.setTextAlignment(1, QtCore.Qt.AlignHCenter)
         header_item.setTextAlignment(2, QtCore.Qt.AlignHCenter)
         self.treeWidget.setHeaderItem(header_item)
 
-        self.treeWidget.setColumnWidth(0, 300)
+        self.treeWidget.setColumnWidth(0, 373)
         self.treeWidget.setColumnWidth(1, 100)
-        self.treeWidget.setColumnWidth(2, 150)
+        self.treeWidget.setColumnWidth(2, 75)
 
         table = Database.db.get_table_for_treeWidget(self.current_tree_name)
         for data in table:
             if data[1] is None:
-                element = QtWidgets.QTreeWidgetItem([data[3]])
-                element.setData(0, 0x0100, {"id": data[0], "path": data[2]})
-                element.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled |
-                                 QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-                self.treeWidget.addTopLevelItem(element)
+                top_element = QtWidgets.QTreeWidgetItem([data[3]])
+                top_element.setData(0, 0x0100, {"id": data[0], "path": data[2]})
+                top_element.setFlags(QtCore.Qt.ItemIsSelectable |
+                                     QtCore.Qt.ItemIsEditable |
+                                     QtCore.Qt.ItemIsDragEnabled |
+                                     QtCore.Qt.ItemIsUserCheckable |
+                                     QtCore.Qt.ItemIsEnabled)
+                self.treeWidget.addTopLevelItem(top_element)
             else:
                 data_dict = eval(data[3])
                 element = QtWidgets.QTreeWidgetItem([str(data_dict["title"]), str(data_dict["amount"]),
@@ -92,8 +95,11 @@ class Application(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
                 element.setTextAlignment(0, QtCore.Qt.AlignLeft)
                 element.setTextAlignment(1, QtCore.Qt.AlignHCenter)
                 element.setTextAlignment(2, QtCore.Qt.AlignHCenter)
-                element.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled |
-                                 QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
+                element.setFlags(QtCore.Qt.ItemIsSelectable |
+                                 QtCore.Qt.ItemIsEditable |
+                                 QtCore.Qt.ItemIsDragEnabled |
+                                 QtCore.Qt.ItemIsUserCheckable |
+                                 QtCore.Qt.ItemIsEnabled)
                 parent_name = Database.db.get_data_by_id_from_table_for_treeWidget(data[1], self.current_tree_name)[3]
                 self.treeWidget.findItems(parent_name, QtCore.Qt.MatchExactly, 0)[0].addChild(element)
 
@@ -114,8 +120,11 @@ class Application(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
         self.lcdNumber.display(total_weight/1000)
         self.lcdNumber.update()
 
-    def add_category_in_tree(self, category_name):
-        category_item = QtWidgets.QTreeWidgetItem([category_name])
+    def add_category_in_tree(self, category_id):
+        data = Database.db.get_data_by_id_from_table_for_treeWidget(category_id, self.current_tree_name)
+        category_item = QtWidgets.QTreeWidgetItem([data[3]])
+        category_item.setData(0, 0x100, {"id": data[0], "path": data[2]})
+
         category_item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled |
                                QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
         self.treeWidget.addTopLevelItem(category_item)
@@ -164,6 +173,7 @@ class Application(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
 
     def select_item(self):
         self.treeWidget.currentItem().setSelected(False)
+        self.show_system_message(self.treeWidget.currentItem().data(0, 0x0100)["path"])
         if self.treeWidget.currentItem().parent():
             self.treeWidget.blockSignals(True)
             if self.treeWidget.currentItem().data(0, 0x200):
@@ -205,15 +215,19 @@ class AddListWindow(QtWidgets.QDialog, add_list_ui.Ui_Add_list):
         super().__init__()
         self.setupUi(self)
         self.buttonBox.accepted.connect(self.ok_button)
+        self.lineEdit.setFocus()
 
     def ok_button(self):
         list_name = self.lineEdit.text()
-        if list_name not in Database.db.get_table_names_for_user():
+        if list_name not in Database.db.get_table_names_for_user() and len(list_name) > 0:
             system_name = Database.db.add_table_in_master(list_name)
             Database.db.create_table_for_treeWidget(system_name)
             window.comboBox.addItem(list_name)
             window.comboBox.setCurrentIndex(window.comboBox.count()-1)
             window.comboBox.update()
+            window.show_system_message("Список создан")
+        else:
+            window.show_system_message("Пожалуйста, введите другое название списка")
 
 
 class AddCategoryWindow(QtWidgets.QDialog, add_category_ui.Ui_Add_category):
@@ -221,12 +235,19 @@ class AddCategoryWindow(QtWidgets.QDialog, add_category_ui.Ui_Add_category):
         super().__init__()
         self.setupUi(self)
         self.buttonBox.accepted.connect(self.ok_button)
+        self.lineEdit.setFocus()
 
     def ok_button(self):
         category_name = self.lineEdit.text()
-        if Database.db.insert_new_root_into_table_for_treeWidget(category_name, window.current_tree_name):
-            window.add_category_in_tree(category_name)
+        if len(category_name) > 0 \
+                and Database.db.insert_new_root_into_table_for_treeWidget(category_name, window.current_tree_name):
+            category_id = Database.db.get_id_by_root_name_from_table_for_treeWidget(category_name,
+                                                                                    window.current_tree_name)
+            window.add_category_in_tree(category_id)
             window.treeWidget.update()
+            window.show_system_message("Категория добавлена")
+        else:
+            window.show_system_message("Неправильное название для категории")
 
 
 class AddItemWindow(QtWidgets.QDialog, add_item_ui.Ui_add_item):
@@ -239,6 +260,7 @@ class AddItemWindow(QtWidgets.QDialog, add_item_ui.Ui_add_item):
         self.tableWidget.setRowHeight(0, 30)
         self.tableWidget.setRowHeight(1, 30)
         self.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Fixed)
+        self.tableWidget.setFocus()
         self.close_button.clicked.connect(self.close_window)
         self.add_button.clicked.connect(self.add_item)
         self.roots_names = Database.db.get_roots_from_table_for_treeWidget(window.current_tree_name)
@@ -265,10 +287,12 @@ class AddItemWindow(QtWidgets.QDialog, add_item_ui.Ui_add_item):
                                                                                    "weight": weight},
                                                                                   window.current_tree_name)
                 window.add_item_in_tree(item_id)
+                window.show_system_message("Вещь добавлена в список")
             else:
                 window.show_system_message("Запись не сделана")
 
             self.tableWidget.clearContents()
+            self.tableWidget.setFocus()
 
         except AttributeError:
             window.show_system_message("Не все поля заполнены")

@@ -61,15 +61,6 @@ class PackingDB:
         return table_names
 
     @db_connection
-    def get_tables_names_from_db(self):
-        self.cursor.execute(f"""SELECT name FROM sqlite_master 
-                                WHERE type='table' and sql LIKE '%path TEXT NOT NULL UNIQUE DEFAULT%'""")
-        table_names = []
-        for row in self.cursor:
-            table_names.append(row[0])
-        return table_names
-
-    @db_connection
     def create_table_for_treeWidget(self, table_name_for_system):
         self.cursor.execute(f"""CREATE TABLE IF NOT EXISTS {table_name_for_system}
 (
@@ -215,12 +206,6 @@ class PackingDB:
             return data
 
     @db_connection
-    def drop_table(self, table_name_for_system):
-        self.delete_from_master(table_name_for_system)
-        self.cursor.execute(f"""DROP TABLE IF EXISTS {table_name_for_system}""")
-        self.connection.commit()
-
-    @db_connection
     def get_id_by_content_from_table_for_treeWidget(self, parent_id, content, table_name_for_system):
         self.cursor.execute(f"""SELECT id FROM {table_name_for_system} 
                                 WHERE parent_id = {parent_id} AND content = :content""",
@@ -228,6 +213,13 @@ class PackingDB:
         item_id = self.cursor.fetchone()
         if item_id:
             return item_id[0]
+
+    @db_connection
+    def get_id_by_root_name_from_table_for_treeWidget(self, name_of_root, table_name_for_system):
+        self.cursor.execute(f"""SELECT id FROM {table_name_for_system} WHERE content = '{name_of_root}'""")
+        root_id = self.cursor.fetchone()
+        if root_id:
+            return root_id[0]
 
     @db_connection
     def delete_element_from_table_for_treeWidget(self, path, table_name_for_system):
@@ -241,40 +233,47 @@ class PackingDB:
                             {"path": path, "new_content": str(new_content)})
         self.connection.commit()
 
+    @db_connection
+    def drop_table(self, table_name_for_system):
+        if table_name_for_system != "master":
+            self.delete_from_master(table_name_for_system)
+        self.cursor.execute(f"""DROP TABLE IF EXISTS {table_name_for_system}""")
+        self.connection.commit()
+
 
 if __name__ != "__main__":
     db = PackingDB("packing.db")
     db.create_master_table()
-    default_table = db.add_table_in_master("default list")
+    default_table = db.add_table_in_master("Список по умолчанию")
     db.create_table_for_treeWidget(default_table)
 
 if __name__ == "__main__":
     db = PackingDB("test.db")
     db.drop_table("master")
     db.create_master_table()
-    db.drop_table("tree")
-    db.drop_table("test_table")
-    db.create_table_for_treeWidget("test_table")
-    db.insert_new_root_into_table_for_treeWidget("Аптечка", "test_table")
-    db.insert_new_root_into_table_for_treeWidget("Еда", "test_table")
-    db.insert_new_item_into_table_for_treeWidget(2, {'title': 'Кекс', 'amount': 5, 'weight': 100}, "test_table")
-    db.insert_new_item_into_table_for_treeWidget(2, {'title': 'Яблоко', 'amount': 2, 'weight': 100}, "test_table")
-    db.insert_new_item_into_table_for_treeWidget(2, {'title': 'Творог', 'amount': 3, 'weight': 100}, "test_table")
-    db.insert_new_item_into_table_for_treeWidget(1, {'title': 'Йод', 'amount': 5, 'weight': 100}, "test_table")
-    db.insert_new_root_into_table_for_treeWidget("Одежда", "test_table")
-    db.insert_new_item_into_table_for_treeWidget(3, {'title': 'Носки', 'amount': 4, 'weight': 100}, "test_table")
-    db.insert_new_item_into_table_for_treeWidget(3, {'title': 'Футболка', 'amount': 3, 'weight': 100}, "test_table")
-    db.insert_new_item_into_table_for_treeWidget(3, {'title': 'Кепка', 'amount': 1, 'weight': 100}, "test_table")
+    # db.drop_table("tree")
+    # db.drop_table("test_table")
+    db.create_table_for_treeWidget("table2")
+    db.insert_new_root_into_table_for_treeWidget("Аптечка", "table2")
+    db.insert_new_root_into_table_for_treeWidget("Еда", "table2")
+    db.insert_new_item_into_table_for_treeWidget(2, {'title': 'Кекс', 'amount': 5, 'weight': 100}, "table2")
+    db.insert_new_item_into_table_for_treeWidget(2, {'title': 'Яблоко', 'amount': 2, 'weight': 100}, "table2")
+    db.insert_new_item_into_table_for_treeWidget(2, {'title': 'Творог', 'amount': 3, 'weight': 100}, "table2")
+    db.insert_new_item_into_table_for_treeWidget(1, {'title': 'Йод', 'amount': 5, 'weight': 100}, "table2")
+    db.insert_new_root_into_table_for_treeWidget("Одежда", "table2")
+    db.insert_new_item_into_table_for_treeWidget(3, {'title': 'Носки', 'amount': 4, 'weight': 100}, "table2")
+    db.insert_new_item_into_table_for_treeWidget(3, {'title': 'Футболка', 'amount': 3, 'weight': 100}, "table2")
+    db.insert_new_item_into_table_for_treeWidget(3, {'title': 'Кепка', 'amount': 1, 'weight': 100}, "table2")
 
-    print(db.get_roots_from_table_for_treeWidget("test_table"))
-    print(db.get_table_for_treeWidget("test_table"))
-    print(db.get_children_of_node_from_table_for_treeWidget(2, "test_table"))
-    print(db.get_data_by_id_from_table_for_treeWidget(2, "test_table"))
-    print(db.get_id_by_content_from_table_for_treeWidget(3, {'title': 'Кепка', 'amount': 1, 'weight': 100}, "test_table"))
-    print(db.get_tables_names_from_db())
+    print(db.get_roots_from_table_for_treeWidget("table2"))
+    print(db.get_table_for_treeWidget("table2"))
+    print(db.get_children_of_node_from_table_for_treeWidget(2, "table2"))
+    print(db.get_id_by_content_from_table_for_treeWidget(3, {'title': 'Кепка', 'amount': 1, 'weight': 100}, "table2"))
 
     system_name = db.add_table_in_master("имя новой таблицы")
     print(system_name)
     print(db.get_table_names_for_user())
+    print(db.get_data_by_id_from_table_for_treeWidget(2, "table2"))
+    print(db.get_id_by_root_name_from_table_for_treeWidget("Еда", "table2"))
 
 
