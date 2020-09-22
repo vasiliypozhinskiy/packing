@@ -20,12 +20,45 @@ class PackingDB:
 
     @db_connection
     def create_master_table(self):
-        self.cursor.execute(f""""CREATE TABLE IF NOT EXISTS master
+        self.cursor.execute(f"""CREATE TABLE IF NOT EXISTS master
 (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    table_name_for_system TEXT NOT NULL UNIQUE REFERENCES sqlite_master (name),
     table_name_for_user TEXT NOT NULL UNIQUE
 )""")
+        self.connection.commit()
+
+    @db_connection
+    def add_table_in_master(self, table_name_for_user):
+        self.cursor.execute(f"""SELECT id FROM master WHERE table_name_for_user = :current_table_name""",
+                            {"current_table_name": table_name_for_user})
+        if not self.cursor.fetchone():
+            self.cursor.execute(f"""INSERT INTO master (table_name_for_user) 
+                                    VALUES (:name_for_user)""",
+                                {"name_for_user": table_name_for_user})
+            self.cursor.execute(f"""SELECT id FROM master 
+                                    WHERE table_name_for_user = :current_table_name""",
+                                {"current_table_name": table_name_for_user})
+            self.connection.commit()
+            return "table" + str(self.cursor.fetchone()[0])
+
+    def delete_from_master(self, table_name_for_system):
+        self.cursor.execute(f"""DELETE FROM master WHERE id = :id""",
+                            {"id": int(table_name_for_system[5:])})
+
+    @db_connection
+    def get_system_name_by_user_name(self, table_name_for_user):
+        self.cursor.execute(f"""SELECT id FROM master 
+                                        WHERE table_name_for_user = :current_table_name""",
+                            {"current_table_name": table_name_for_user})
+        return "table" + str(self.cursor.fetchone()[0])
+
+    @db_connection
+    def get_table_names_for_user(self):
+        self.cursor.execute(f"""SELECT table_name_for_user FROM master""")
+        table_names = []
+        for row in self.cursor:
+            table_names.append(row[0])
+        return table_names
 
     @db_connection
     def get_tables_names_from_db(self):
@@ -182,7 +215,8 @@ class PackingDB:
             return data
 
     @db_connection
-    def drop_table_for_treeWidget(self, table_name_for_system):
+    def drop_table(self, table_name_for_system):
+        self.delete_from_master(table_name_for_system)
         self.cursor.execute(f"""DROP TABLE IF EXISTS {table_name_for_system}""")
         self.connection.commit()
 
@@ -210,12 +244,16 @@ class PackingDB:
 
 if __name__ != "__main__":
     db = PackingDB("packing.db")
-    db.create_table_for_treeWidget("new_table")
+    db.create_master_table()
+    default_table = db.add_table_in_master("default list")
+    db.create_table_for_treeWidget(default_table)
 
 if __name__ == "__main__":
     db = PackingDB("test.db")
-    db.drop_table_for_treeWidget("tree")
-    db.drop_table_for_treeWidget("test_table")
+    db.drop_table("master")
+    db.create_master_table()
+    db.drop_table("tree")
+    db.drop_table("test_table")
     db.create_table_for_treeWidget("test_table")
     db.insert_new_root_into_table_for_treeWidget("Аптечка", "test_table")
     db.insert_new_root_into_table_for_treeWidget("Еда", "test_table")
@@ -229,12 +267,14 @@ if __name__ == "__main__":
     db.insert_new_item_into_table_for_treeWidget(3, {'title': 'Кепка', 'amount': 1, 'weight': 100}, "test_table")
 
     print(db.get_roots_from_table_for_treeWidget("test_table"))
-    # db.delete_element(".2.")
     print(db.get_table_for_treeWidget("test_table"))
     print(db.get_children_of_node_from_table_for_treeWidget(2, "test_table"))
     print(db.get_data_by_id_from_table_for_treeWidget(2, "test_table"))
     print(db.get_id_by_content_from_table_for_treeWidget(3, {'title': 'Кепка', 'amount': 1, 'weight': 100}, "test_table"))
     print(db.get_tables_names_from_db())
 
+    system_name = db.add_table_in_master("имя новой таблицы")
+    print(system_name)
+    print(db.get_table_names_for_user())
 
 

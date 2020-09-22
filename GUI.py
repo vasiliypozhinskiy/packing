@@ -17,8 +17,8 @@ class Application(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
         self.ColorForSelectedItem = QtGui.QColor(0, 127, 0, 255)
         self.ColorForNotSelectedItem = QtGui.QColor(255, 0, 0, 255)
 
-        self.comboBox.addItems(Database.db.get_tables_names_from_db())
-        self.current_tree_name = self.comboBox.currentText()
+        self.comboBox.addItems(Database.db.get_table_names_for_user())
+        self.current_tree_name = Database.db.get_system_name_by_user_name(self.comboBox.currentText())
         self.tool_menu = QtWidgets.QMenu()
         self.add_list_action = QtWidgets.QAction("Добавить список")
         self.add_list_action.triggered.connect(self.add_list)
@@ -35,7 +35,7 @@ class Application(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
         self.Add_item_button.clicked.connect(self.add_item)
         self.Delete_button.clicked.connect(self.delete_selected_item)
         self.treeWidget.clicked.connect(self.select_item)
-        self.treeWidget.itemChanged.connect(self.change_item)
+        self.treeWidget.itemChanged.connect(self.update_item)
         self.comboBox.currentTextChanged.connect(self.change_current_tree)
 
     def add_list(self):
@@ -53,7 +53,7 @@ class Application(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
         dialog.exec()
 
     def delete_list(self):
-        Database.db.drop_table_for_treeWidget(self.current_tree_name)
+        Database.db.drop_table(self.current_tree_name)
         self.comboBox.removeItem(self.comboBox.currentIndex())
         self.comboBox.update()
 
@@ -61,8 +61,9 @@ class Application(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
         self.tool_menu.exec_(self.toolButton.mapToGlobal(QtCore.QPoint(31, 0)))
 
     def change_current_tree(self):
-        self.current_tree_name = self.comboBox.currentText()
-        self.create_tree()
+        if self.comboBox.count() > 0:
+            self.current_tree_name = Database.db.get_system_name_by_user_name(self.comboBox.currentText())
+            self.create_tree()
 
     def create_tree(self):
         self.treeWidget.clear()
@@ -135,7 +136,7 @@ class Application(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
 
         self.lcd_number_update()
 
-    def change_item(self):
+    def update_item(self):
         path = self.treeWidget.currentItem().data(0, 0x100)["path"]
         if not self.treeWidget.currentItem().parent():
             title = self.treeWidget.currentItem().text(0)
@@ -156,6 +157,8 @@ class Application(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
             sip.delete(self.treeWidget.currentItem())
             self.treeWidget.update()
             self.lcd_number_update()
+        except AttributeError:
+            self.show_system_message("Выберите элемент для удаления")
         except Exception as error:
             self.show_system_message(error.__class__.__name__)
 
@@ -205,9 +208,11 @@ class AddListWindow(QtWidgets.QDialog, add_list_ui.Ui_Add_list):
 
     def ok_button(self):
         list_name = self.lineEdit.text()
-        if list_name not in Database.db.get_tables_names_from_db():
-            Database.db.create_table_for_treeWidget(list_name)
+        if list_name not in Database.db.get_table_names_for_user():
+            system_name = Database.db.add_table_in_master(list_name)
+            Database.db.create_table_for_treeWidget(system_name)
             window.comboBox.addItem(list_name)
+            window.comboBox.setCurrentIndex(window.comboBox.count()-1)
             window.comboBox.update()
 
 
@@ -250,10 +255,14 @@ class AddItemWindow(QtWidgets.QDialog, add_item_ui.Ui_add_item):
             weight = int(self.tableWidget.item(0, 2).text())
             category_id = self.select_category.currentData()
             if Database.db.insert_new_item_into_table_for_treeWidget(category_id,
-                                                                     {"title": title, "amount": amount, "weight": weight},
+                                                                     {"title": title,
+                                                                      "amount": amount,
+                                                                      "weight": weight},
                                                                      window.current_tree_name):
                 item_id = Database.db.get_id_by_content_from_table_for_treeWidget(category_id,
-                                                                                  {"title": title, "amount": amount, "weight": weight},
+                                                                                  {"title": title,
+                                                                                   "amount": amount,
+                                                                                   "weight": weight},
                                                                                   window.current_tree_name)
                 window.add_item_in_tree(item_id)
             else:
