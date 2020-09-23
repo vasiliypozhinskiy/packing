@@ -90,7 +90,7 @@ class Application(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
             else:
                 data_dict = eval(data[3])
                 element = QtWidgets.QTreeWidgetItem([str(data_dict["title"]), str(data_dict["amount"]),
-                                                    str(data_dict["weight"])])
+                                                     str(data_dict["weight"])])
                 element.setData(0, 0x100, {"id": data[0], "parent_id": data[1], "path": data[2]})
                 element.setTextAlignment(0, QtCore.Qt.AlignLeft)
                 element.setTextAlignment(1, QtCore.Qt.AlignHCenter)
@@ -117,7 +117,7 @@ class Application(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
                 visited.append(item)
                 total_weight += int(item.text(2))
             iterator += 1
-        self.lcdNumber.display(total_weight/1000)
+        self.lcdNumber.display(total_weight / 1000)
         self.lcdNumber.update()
 
     def add_category_in_tree(self, category_id):
@@ -149,14 +149,24 @@ class Application(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
         path = self.treeWidget.currentItem().data(0, 0x100)["path"]
         if not self.treeWidget.currentItem().parent():
             title = self.treeWidget.currentItem().text(0)
-            Database.db.update_element_in_table_for_treeWidget(path, title, self.current_tree_name)
+            if Database.db.update_element_in_table_for_treeWidget(path, title, self.current_tree_name):
+                self.show_system_message("Категория переименованна")
+            else:
+                self.create_tree()
+                self.show_system_message("Изменения отменены")
         else:
             title = self.treeWidget.currentItem().text(0)
             amount = int(self.treeWidget.currentItem().text(1))
             weight = int(self.treeWidget.currentItem().text(2))
-            Database.db.update_element_in_table_for_treeWidget(path,
-                                                               {"title": title, "amount": amount, "weight": weight},
-                                                               self.current_tree_name)
+            parent_id = self.treeWidget.currentItem().data(0, 0x100)["parent_id"]
+            if Database.db.update_element_in_table_for_treeWidget(path,
+                                                                  {"title": title, "amount": amount, "weight": weight},
+                                                                  self.current_tree_name,
+                                                                  parent_id):
+                self.show_system_message("Изменения внесены")
+            else:
+                self.create_tree()
+                self.show_system_message("Изменения отменены")
         self.lcd_number_update()
 
     def delete_selected_item(self):
@@ -222,7 +232,7 @@ class AddListWindow(QtWidgets.QDialog, add_list_ui.Ui_Add_list):
             system_name = Database.db.add_table_in_master(list_name)
             Database.db.create_table_for_treeWidget(system_name)
             window.comboBox.addItem(list_name)
-            window.comboBox.setCurrentIndex(window.comboBox.count()-1)
+            window.comboBox.setCurrentIndex(window.comboBox.count() - 1)
             window.comboBox.update()
             window.show_system_message("Список создан")
         else:
@@ -246,7 +256,7 @@ class AddCategoryWindow(QtWidgets.QDialog, add_category_ui.Ui_Add_category):
             window.treeWidget.update()
             window.show_system_message("Категория добавлена")
         else:
-            window.show_system_message("Неправильное название для категории")
+            window.show_system_message("Неправильное название для категории, возможно такая уже есть")
 
 
 class AddItemWindow(QtWidgets.QDialog, add_item_ui.Ui_add_item):

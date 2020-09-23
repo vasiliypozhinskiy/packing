@@ -166,7 +166,7 @@ class PackingDB:
     def insert_new_item_into_table_for_treeWidget(self, parent_id: int,
                                                   content: dict,
                                                   table_name_for_system: str) -> bool:
-        """Return True if new item recorded, else False.
+        """Returns True if new item recorded, else False.
         The content must be of the following format: {'title': str, 'amount': int, 'weight': int}"""
         pattern = r"\{'title': '[\w ]+', 'amount': \d+, 'weight': \d+\}"
         if re.findall(pattern, str(content)):
@@ -231,23 +231,43 @@ class PackingDB:
             return item_id[0]
 
     @db_connection
-    def get_id_by_root_name_from_table_for_treeWidget(self, name_of_root, table_name_for_system):
+    def get_id_by_root_name_from_table_for_treeWidget(self, name_of_root: str, table_name_for_system: str) -> int:
         self.cursor.execute(f"""SELECT id FROM {table_name_for_system} WHERE content = '{name_of_root}'""")
         root_id = self.cursor.fetchone()
         if root_id:
             return root_id[0]
 
     @db_connection
-    def delete_element_from_table_for_treeWidget(self, path, table_name_for_system):
+    def delete_element_from_table_for_treeWidget(self, path: str, table_name_for_system: str):
         self.cursor.execute(f"""DELETE FROM {table_name_for_system} WHERE path = :path""",
                             {"path": path})
         self.connection.commit()
 
     @db_connection
-    def update_element_in_table_for_treeWidget(self, path, new_content, table_name_for_system):
-        self.cursor.execute(f"""UPDATE {table_name_for_system} SET content = :new_content WHERE path = :path""",
-                            {"path": path, "new_content": str(new_content)})
-        self.connection.commit()
+    def update_element_in_table_for_treeWidget(self, path: str,
+                                               new_content,
+                                               table_name_for_system: str,
+                                               parent_id=None) -> bool:
+        """Returns True if item updated, else False.
+        For root content = title, for children in format {"title": str, "amount": int, "weight": int}"""
+        pattern = r"\{'title': '[\w ]+', 'amount': \d+, 'weight': \d+\}"
+        if parent_id and re.findall(pattern, str(new_content)):
+            self.cursor.execute(f"""SELECT id FROM {table_name_for_system} 
+                                    WHERE parent_id = :parent_id AND content = :new_content""",
+                                {"new_content": str(new_content), "parent_id": parent_id})
+            if not self.cursor.fetchone():
+                self.cursor.execute(f"""UPDATE {table_name_for_system} SET content = :new_content WHERE path = :path""",
+                                    {"path": path, "new_content": str(new_content)})
+                self.connection.commit()
+                return True
+        elif not parent_id and new_content is str:
+            self.cursor.execute(f"""SELECT id FROM {table_name_for_system} WHERE content = :new_content""")
+            if not self.cursor.fetchone():
+                self.cursor.execute(f"""UPDATE {table_name_for_system} SET content = :new_content WHERE path = :path""",
+                                    {"path": path, "new_content": str(new_content)})
+                self.connection.commit()
+                return True
+        return False
 
     @db_connection
     def drop_table(self, table_name_for_system):
