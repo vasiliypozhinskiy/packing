@@ -173,7 +173,6 @@ class Application(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
 
     def select_item(self):
         self.treeWidget.currentItem().setSelected(False)
-        self.show_system_message(self.treeWidget.currentItem().data(0, 0x0100)["path"])
         if self.treeWidget.currentItem().parent():
             self.treeWidget.blockSignals(True)
             if self.treeWidget.currentItem().data(0, 0x200):
@@ -297,7 +296,7 @@ class AddItemWindow(QtWidgets.QDialog, add_item_ui.Ui_add_item):
         except AttributeError:
             window.show_system_message("Не все поля заполнены")
         except ValueError:
-            window.show_system_message("Введите правильные значения")
+            window.show_system_message("Введены неправильные значения")
 
 
 app = QtWidgets.QApplication(sys.argv)
