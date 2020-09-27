@@ -1,11 +1,12 @@
 import sqlite3
 import re
+import functools
 
 
 def db_connection(func):
     """Must to use this in all public methods of PackingDB"""
-
-    def connect_close(self, *args, **kwargs):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
         self.connection = sqlite3.connect(f"{self.db_path}")
         self.cursor = self.connection.cursor()
         self.cursor.execute("""PRAGMA foreign_keys = ON""")
@@ -13,7 +14,7 @@ def db_connection(func):
         self.cursor.close()
         return func_value
 
-    return connect_close
+    return wrapper
 
 
 class PackingDB:
