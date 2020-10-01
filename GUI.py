@@ -57,15 +57,12 @@ class MainWindow(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
         self.add_list_dialog = AddListWindow()
         self.add_category_dialog = AddCategoryWindow()
 
-        self.add_list_dialog.closeDialog.connect(self.dialog_signal_slot)
-        self.add_category_dialog.closeDialog.connect(self.dialog_signal_slot)
+        self.add_list_dialog.closeDialog.connect(self.enable_buttons)
+        self.add_category_dialog.closeDialog.connect(self.enable_buttons)
 
     def add_list(self):
         """Opens dialog window for adding new list"""
-        self.tool_menu.setEnabled(False)
-        self.Add_category_button.setEnabled(False)
-        self.Add_item_button.setEnabled(False)
-        self.Delete_button.setEnabled(False)
+        self.disable_buttons()
         self.add_list_dialog.show()
 
     def delete_list(self):
@@ -76,10 +73,7 @@ class MainWindow(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
 
     def add_category(self):
         """Opens dialog window for adding new category"""
-        self.tool_menu.setEnabled(False)
-        self.Add_category_button.setEnabled(False)
-        self.Add_item_button.setEnabled(False)
-        self.Delete_button.setEnabled(False)
+        self.disable_buttons()
         self.add_category_dialog.show()
 
     def add_item(self):
@@ -87,11 +81,8 @@ class MainWindow(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
         roots_names = Database.db.get_roots_from_table_for_treeWidget(window.current_tree_name)
         if roots_names:
             self.add_item_dialog = AddItemWindow()
-            self.add_item_dialog.closeDialog.connect(self.dialog_signal_slot)
-            self.tool_menu.setEnabled(False)
-            self.Add_category_button.setEnabled(False)
-            self.Add_item_button.setEnabled(False)
-            self.Delete_button.setEnabled(False)
+            self.add_item_dialog.closeDialog.connect(self.enable_buttons)
+            self.disable_buttons()
             self.add_item_dialog.show()
         else:
             self.show_system_message("Сначала добавьте категорию")
@@ -99,11 +90,19 @@ class MainWindow(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
     def show_menu(self):
         self.tool_menu.exec_(self.toolButton.mapToGlobal(QtCore.QPoint(31, 0)))
 
-    def dialog_signal_slot(self):
+    def enable_buttons(self):
         self.tool_menu.setEnabled(True)
         self.Add_category_button.setEnabled(True)
         self.Add_item_button.setEnabled(True)
         self.Delete_button.setEnabled(True)
+        self.comboBox.setEnabled(True)
+
+    def disable_buttons(self):
+        self.tool_menu.setEnabled(False)
+        self.Add_category_button.setEnabled(False)
+        self.Add_item_button.setEnabled(False)
+        self.Delete_button.setEnabled(False)
+        self.comboBox.setEnabled(False)
 
     def change_current_tree(self):
         """When current item in combobox changes this func calls create_tree func"""
@@ -328,7 +327,7 @@ class AddCategoryWindow(QtWidgets.QDialog, add_category_ui.Ui_Add_category):
             window.show_system_message("Категория добавлена")
         else:
             window.show_system_message("Неправильное название для категории, возможно такая уже есть")
-        window.dialog_signal_slot()
+        window.enable_buttons()
 
     def close_window(self):
         self.close()
