@@ -1,9 +1,12 @@
 import sqlite3
 import re
+import functools
 
 
 def db_connection(func):
-    def connect_close(self, *args, **kwargs):
+    """Must to use this in all public methods of PackingDB"""
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
         self.connection = sqlite3.connect(f"{self.db_path}")
         self.cursor = self.connection.cursor()
         self.cursor.execute("""PRAGMA foreign_keys = ON""")
@@ -11,7 +14,7 @@ def db_connection(func):
         self.cursor.close()
         return func_value
 
-    return connect_close
+    return wrapper
 
 
 class PackingDB:
@@ -20,6 +23,8 @@ class PackingDB:
 
     @db_connection
     def create_master_table(self):
+        """The table separates the name for the user and the name for the system.
+        Because of this the user can specify any name for the set."""
         self.cursor.execute(f"""CREATE TABLE IF NOT EXISTS master
 (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -28,7 +33,7 @@ class PackingDB:
         self.connection.commit()
 
     @db_connection
-    def add_table_in_master(self, table_name_for_user):
+    def add_table_in_master(self, table_name_for_user: str) -> str:
         self.cursor.execute(f"""SELECT id FROM master WHERE table_name_for_user = :current_table_name""",
                             {"current_table_name": table_name_for_user})
         if not self.cursor.fetchone():
@@ -41,19 +46,20 @@ class PackingDB:
             self.connection.commit()
             return "table" + str(self.cursor.fetchone()[0])
 
-    def delete_from_master(self, table_name_for_system):
+    def delete_from_master(self, table_name_for_system: str):
         self.cursor.execute(f"""DELETE FROM master WHERE id = :id""",
                             {"id": int(table_name_for_system[5:])})
 
     @db_connection
-    def get_system_name_by_user_name(self, table_name_for_user):
+    def get_system_name_by_user_name(self, table_name_for_user: str) -> str:
         self.cursor.execute(f"""SELECT id FROM master 
                                         WHERE table_name_for_user = :current_table_name""",
                             {"current_table_name": table_name_for_user})
         return "table" + str(self.cursor.fetchone()[0])
 
     @db_connection
-    def get_table_names_for_user(self):
+    def get_table_names_for_user(self) -> list:
+        """Get list of names, which user enter into program"""
         self.cursor.execute(f"""SELECT table_name_for_user FROM master""")
         table_names = []
         for row in self.cursor:
@@ -61,7 +67,8 @@ class PackingDB:
         return table_names
 
     @db_connection
-    def create_table_for_treeWidget(self, table_name_for_system):
+    def create_table_for_treeWidget(self, table_name_for_system: str):
+        """Сreates a table with triggers that guarantee data integrity"""
         self.cursor.execute(f"""CREATE TABLE IF NOT EXISTS {table_name_for_system}
 (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -147,7 +154,7 @@ class PackingDB:
         self.connection.commit()
 
     @db_connection
-    def insert_new_root_into_table_for_treeWidget(self, name_of_root, table_name_for_system):
+    def insert_new_root_into_table_for_treeWidget(self, name_of_root: str, table_name_for_system: str) -> bool:
         """Return True if new root recorded, else False"""
         self.cursor.execute(f"""SELECT id FROM {table_name_for_system} WHERE content = '{name_of_root}'""")
         if not self.cursor.fetchone():
@@ -157,9 +164,12 @@ class PackingDB:
         return False
 
     @db_connection
-    def insert_new_item_into_table_for_treeWidget(self, parent_id, content, table_name_for_system) -> bool:
-        """Return True if new item recorded, else False"""
-        pattern = r"\{'title': '[\w ]+', 'amount': \d+, 'weight': \d+\}"
+    def insert_new_item_into_table_for_treeWidget(self, parent_id: int,
+                                                  content: dict,
+                                                  table_name_for_system: str) -> bool:
+        """Returns True if new item recorded, else False.
+        The content must be of the following format: {'title': str, 'amount': int, 'weight': int}"""
+        pattern = r"\{'title': '.+', 'amount': \d+, 'weight': \d+\}"
         if re.findall(pattern, str(content)):
             self.cursor.execute(f"""SELECT id FROM {table_name_for_system} 
                                     WHERE parent_id = {parent_id} AND content = :content""",
@@ -173,7 +183,8 @@ class PackingDB:
         return False
 
     @db_connection
-    def get_table_for_treeWidget(self, table_name_for_system):
+    def get_table_for_treeWidget(self, table_name_for_system: str) -> list:
+        """Returns all table as list of rows (tuples)"""
         self.cursor.execute(f"""SELECT * FROM {table_name_for_system} ORDER BY parent_id""")
         content = []
         for row in self.cursor:
@@ -181,7 +192,8 @@ class PackingDB:
         return content
 
     @db_connection
-    def get_roots_from_table_for_treeWidget(self, table_name_for_system) -> list:
+    def get_roots_from_table_for_treeWidget(self, table_name_for_system: str) -> list:
+        """Returns list of roots in format: (id: int, 'title': str)"""
         self.cursor.execute(f"""SELECT id, content FROM {table_name_for_system} WHERE parent_id IS NULL""")
         roots = []
         for row in self.cursor:
@@ -189,7 +201,7 @@ class PackingDB:
         return roots
 
     @db_connection
-    def get_children_of_node_from_table_for_treeWidget(self, node_id, table_name_for_system) -> list:
+    def get_children_of_node_from_table_for_treeWidget(self, node_id: int, table_name_for_system: str) -> list:
         self.cursor.execute(f"""SELECT id FROM {table_name_for_system} WHERE path LIKE(
                                 SELECT path || '%.' FROM {table_name_for_system} WHERE id = {node_id}) ORDER BY path""")
         children_ids = []
@@ -199,14 +211,19 @@ class PackingDB:
         return children_ids
 
     @db_connection
-    def get_data_by_id_from_table_for_treeWidget(self, element_id, table_name_for_system):
+    def get_data_by_id_from_table_for_treeWidget(self, element_id: int, table_name_for_system: str) -> tuple:
+        """Returns data if format: (id, parent_id, path, content)
+        For root content = 'title': str
+        For children content like {'title': str, 'amount': int, 'weight': int}
+        (It's str, not dict)"""
         self.cursor.execute(f"""SELECT * FROM {table_name_for_system} WHERE id = {element_id}""")
         data = self.cursor.fetchone()
         if data:
             return data
 
     @db_connection
-    def get_id_by_content_from_table_for_treeWidget(self, parent_id, content, table_name_for_system):
+    def get_id_by_content_from_table_for_treeWidget(self, parent_id: int, content: dict, table_name_for_system: str):
+        """Tested only for children"""
         self.cursor.execute(f"""SELECT id FROM {table_name_for_system} 
                                 WHERE parent_id = {parent_id} AND content = :content""",
                             {"content": str(content)})
@@ -215,23 +232,43 @@ class PackingDB:
             return item_id[0]
 
     @db_connection
-    def get_id_by_root_name_from_table_for_treeWidget(self, name_of_root, table_name_for_system):
+    def get_id_by_root_name_from_table_for_treeWidget(self, name_of_root: str, table_name_for_system: str) -> int:
         self.cursor.execute(f"""SELECT id FROM {table_name_for_system} WHERE content = '{name_of_root}'""")
         root_id = self.cursor.fetchone()
         if root_id:
             return root_id[0]
 
     @db_connection
-    def delete_element_from_table_for_treeWidget(self, path, table_name_for_system):
+    def delete_element_from_table_for_treeWidget(self, path: str, table_name_for_system: str):
         self.cursor.execute(f"""DELETE FROM {table_name_for_system} WHERE path = :path""",
                             {"path": path})
         self.connection.commit()
 
     @db_connection
-    def update_element_in_table_for_treeWidget(self, path, new_content, table_name_for_system):
-        self.cursor.execute(f"""UPDATE {table_name_for_system} SET content = :new_content WHERE path = :path""",
-                            {"path": path, "new_content": str(new_content)})
-        self.connection.commit()
+    def update_element_in_table_for_treeWidget(self, path: str,
+                                               new_content,
+                                               table_name_for_system: str,
+                                               parent_id=None) -> bool:
+        """Returns True if item updated, else False.
+        For root content = title, for children in format {"title": str, "amount": int, "weight": int}"""
+        pattern = r"\{'title': '.+', 'amount': \d+, 'weight': \d+\}"
+        if parent_id and re.findall(pattern, str(new_content)):
+            self.cursor.execute(f"""SELECT id FROM {table_name_for_system} 
+                                    WHERE parent_id = :parent_id AND content = :new_content""",
+                                {"new_content": str(new_content), "parent_id": parent_id})
+            if not self.cursor.fetchone():
+                self.cursor.execute(f"""UPDATE {table_name_for_system} SET content = :new_content WHERE path = :path""",
+                                    {"path": path, "new_content": str(new_content)})
+                self.connection.commit()
+                return True
+        elif not parent_id and new_content is str:
+            self.cursor.execute(f"""SELECT id FROM {table_name_for_system} WHERE content = :new_content""")
+            if not self.cursor.fetchone():
+                self.cursor.execute(f"""UPDATE {table_name_for_system} SET content = :new_content WHERE path = :path""",
+                                    {"path": path, "new_content": str(new_content)})
+                self.connection.commit()
+                return True
+        return False
 
     @db_connection
     def drop_table(self, table_name_for_system):
@@ -274,6 +311,5 @@ if __name__ == "__main__":
     print(system_name)
     print(db.get_table_names_for_user())
     print(db.get_data_by_id_from_table_for_treeWidget(2, "table2"))
+    print(db.get_data_by_id_from_table_for_treeWidget(10, "table2"))
     print(db.get_id_by_root_name_from_table_for_treeWidget("Еда", "table2"))
-
-
