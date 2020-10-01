@@ -173,7 +173,6 @@ class Application(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
 
     def select_item(self):
         self.treeWidget.currentItem().setSelected(False)
-        self.show_system_message(self.treeWidget.currentItem().data(0, 0x0100)["path"])
         if self.treeWidget.currentItem().parent():
             self.treeWidget.blockSignals(True)
             if self.treeWidget.currentItem().data(0, 0x200):
