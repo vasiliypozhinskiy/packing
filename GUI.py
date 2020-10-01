@@ -28,6 +28,7 @@ class MainWindow(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
         super().__init__()
         self.setupUi(self)
         self.setFixedSize(807, 622)
+        self.setWindowTitle("Packing")
 
         self.ColorForSelectedItem = QtGui.QColor(0, 127, 0, 255)
         self.ColorForNotSelectedItem = QtGui.QColor(255, 0, 0, 255)
@@ -277,6 +278,7 @@ class AddListWindow(QtWidgets.QDialog, add_list_ui.Ui_Add_list):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+        self.setWindowTitle("Добавление списка")
         self.buttonBox.accepted.connect(self.ok_button)
         self.buttonBox.rejected.connect(self.close_window)
         self.lineEdit.setFocus()
@@ -309,6 +311,7 @@ class AddCategoryWindow(QtWidgets.QDialog, add_category_ui.Ui_Add_category):
         super().__init__()
         self.setupUi(self)
         self.setFixedSize(389, 102)
+        self.setWindowTitle("Добавление категории")
         self.buttonBox.accepted.connect(self.ok_button)
         self.buttonBox.rejected.connect(self.close_window)
         self.lineEdit.setFocus()
@@ -341,6 +344,7 @@ class AddItemWindow(QtWidgets.QDialog, add_item_ui.Ui_add_item):
         super().__init__()
         self.setupUi(self)
         self.setFixedSize(598, 177)
+        self.setWindowTitle("Добавление предмета")
         self.tableWidget.setColumnWidth(0, 300)
         self.tableWidget.setColumnWidth(1, 149)
         self.tableWidget.setColumnWidth(2, 120)
