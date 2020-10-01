@@ -325,6 +325,7 @@ class AddCategoryWindow(QtWidgets.QDialog, add_category_ui.Ui_Add_category):
             window.show_system_message("Категория добавлена")
         else:
             window.show_system_message("Неправильное название для категории, возможно такая уже есть")
+        window.dialog_signal_slot()
 
     def close_window(self):
         self.close()
