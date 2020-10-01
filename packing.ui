@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>722</width>
-    <height>630</height>
+    <width>807</width>
+    <height>622</height>
    </rect>
   </property>
   <property name="font">
@@ -26,7 +26,7 @@
      <rect>
       <x>10</x>
       <y>10</y>
-      <width>701</width>
+      <width>791</width>
       <height>31</height>
      </rect>
     </property>
@@ -36,7 +36,7 @@
      <rect>
       <x>10</x>
       <y>90</y>
-      <width>550</width>
+      <width>640</width>
       <height>430</height>
      </rect>
     </property>
@@ -48,7 +48,7 @@
     </property>
     <property name="font">
      <font>
-      <pointsize>14</pointsize>
+      <pointsize>12</pointsize>
      </font>
     </property>
     <property name="cursor" stdset="0">
@@ -56,6 +56,15 @@
     </property>
     <property name="styleSheet">
      <string notr="true">QTreeWidget {Color: red}</string>
+    </property>
+    <property name="verticalScrollBarPolicy">
+     <enum>Qt::ScrollBarAlwaysOn</enum>
+    </property>
+    <property name="horizontalScrollBarPolicy">
+     <enum>Qt::ScrollBarAsNeeded</enum>
+    </property>
+    <property name="sizeAdjustPolicy">
+     <enum>QAbstractScrollArea::AdjustToContents</enum>
     </property>
     <property name="editTriggers">
      <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
@@ -81,7 +90,7 @@
      <rect>
       <x>12</x>
       <y>50</y>
-      <width>511</width>
+      <width>601</width>
       <height>22</height>
      </rect>
     </property>
@@ -89,7 +98,7 @@
    <widget class="QToolButton" name="toolButton">
     <property name="geometry">
      <rect>
-      <x>530</x>
+      <x>620</x>
       <y>50</y>
       <width>31</width>
       <height>21</height>
@@ -102,7 +111,7 @@
    <widget class="QPushButton" name="Delete_button">
     <property name="geometry">
      <rect>
-      <x>570</x>
+      <x>660</x>
       <y>90</y>
       <width>141</width>
       <height>28</height>
@@ -115,7 +124,7 @@
    <widget class="QPushButton" name="Add_category_button">
     <property name="geometry">
      <rect>
-      <x>570</x>
+      <x>660</x>
       <y>130</y>
       <width>141</width>
       <height>28</height>
@@ -128,7 +137,7 @@
    <widget class="QPushButton" name="Add_item_button">
     <property name="geometry">
      <rect>
-      <x>570</x>
+      <x>660</x>
       <y>170</y>
       <width>141</width>
       <height>28</height>
@@ -141,9 +150,9 @@
    <widget class="QLCDNumber" name="lcdNumber">
     <property name="geometry">
      <rect>
-      <x>460</x>
+      <x>550</x>
       <y>520</y>
-      <width>101</width>
+      <width>100</width>
       <height>51</height>
      </rect>
     </property>
@@ -164,14 +173,19 @@
    <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
-      <x>380</x>
+      <x>420</x>
       <y>530</y>
-      <width>71</width>
+      <width>121</width>
       <height>31</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
     <property name="text">
-     <string>Общий вес:</string>
+     <string>Общий вес, кг:</string>
     </property>
    </widget>
   </widget>
@@ -180,8 +194,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>722</width>
-     <height>19</height>
+     <width>807</width>
+     <height>26</height>
     </rect>
    </property>
   </widget>

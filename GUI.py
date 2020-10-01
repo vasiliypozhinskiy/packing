@@ -27,6 +27,7 @@ class MainWindow(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+        self.setFixedSize(807, 622)
 
         self.ColorForSelectedItem = QtGui.QColor(0, 127, 0, 255)
         self.ColorForNotSelectedItem = QtGui.QColor(255, 0, 0, 255)
@@ -52,26 +53,19 @@ class MainWindow(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
         self.treeWidget.itemChanged.connect(self.update_item)
         self.comboBox.currentTextChanged.connect(self.change_current_tree)
 
+        self.add_list_dialog = AddListWindow()
+        self.add_category_dialog = AddCategoryWindow()
+
+        self.add_list_dialog.closeDialog.connect(self.dialog_signal_slot)
+        self.add_category_dialog.closeDialog.connect(self.dialog_signal_slot)
+
     def add_list(self):
         """Opens dialog window for adding new list"""
-        dialog = AddListWindow()
-        dialog.exec()
-
-    def add_category(self):
-        """Opens dialog window for adding new category"""
-        dialog = AddCategoryWindow()
-        dialog.show()
-        dialog.exec()
-
-    def add_item(self):
-        """Opens dialog window for adding new item in category"""
-        roots_names = Database.db.get_roots_from_table_for_treeWidget(window.current_tree_name)
-        if roots_names:
-            dialog = AddItemWindow()
-            dialog.show()
-            dialog.exec()
-        else:
-            self.show_system_message("Сначала добавьте категорию")
+        self.tool_menu.setEnabled(False)
+        self.Add_category_button.setEnabled(False)
+        self.Add_item_button.setEnabled(False)
+        self.Delete_button.setEnabled(False)
+        self.add_list_dialog.show()
 
     def delete_list(self):
         """Deletes current list from db and comboBox with names of trees"""
@@ -79,8 +73,36 @@ class MainWindow(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
         self.comboBox.removeItem(self.comboBox.currentIndex())
         self.comboBox.update()
 
+    def add_category(self):
+        """Opens dialog window for adding new category"""
+        self.tool_menu.setEnabled(False)
+        self.Add_category_button.setEnabled(False)
+        self.Add_item_button.setEnabled(False)
+        self.Delete_button.setEnabled(False)
+        self.add_category_dialog.show()
+
+    def add_item(self):
+        """Opens dialog window for adding new item in category"""
+        roots_names = Database.db.get_roots_from_table_for_treeWidget(window.current_tree_name)
+        if roots_names:
+            self.add_item_dialog = AddItemWindow()
+            self.add_item_dialog.closeDialog.connect(self.dialog_signal_slot)
+            self.tool_menu.setEnabled(False)
+            self.Add_category_button.setEnabled(False)
+            self.Add_item_button.setEnabled(False)
+            self.Delete_button.setEnabled(False)
+            self.add_item_dialog.show()
+        else:
+            self.show_system_message("Сначала добавьте категорию")
+
     def show_menu(self):
         self.tool_menu.exec_(self.toolButton.mapToGlobal(QtCore.QPoint(31, 0)))
+
+    def dialog_signal_slot(self):
+        self.tool_menu.setEnabled(True)
+        self.Add_category_button.setEnabled(True)
+        self.Add_item_button.setEnabled(True)
+        self.Delete_button.setEnabled(True)
 
     def change_current_tree(self):
         """When current item in combobox changes this func calls create_tree func"""
@@ -97,9 +119,9 @@ class MainWindow(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
         header_item.setTextAlignment(2, QtCore.Qt.AlignHCenter)
         self.treeWidget.setHeaderItem(header_item)
 
-        self.treeWidget.setColumnWidth(0, 373)
+        self.treeWidget.setColumnWidth(0, 417)
         self.treeWidget.setColumnWidth(1, 100)
-        self.treeWidget.setColumnWidth(2, 75)
+        self.treeWidget.setColumnWidth(2, 100)
 
         table = Database.db.get_table_for_treeWidget(self.current_tree_name)
         for data in table:
@@ -250,10 +272,13 @@ class MainWindow(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
 
 
 class AddListWindow(QtWidgets.QDialog, add_list_ui.Ui_Add_list):
+    closeDialog = QtCore.pyqtSignal()
+
     def __init__(self):
         super().__init__()
         self.setupUi(self)
         self.buttonBox.accepted.connect(self.ok_button)
+        self.buttonBox.rejected.connect(self.close_window)
         self.lineEdit.setFocus()
 
     def ok_button(self):
@@ -268,13 +293,24 @@ class AddListWindow(QtWidgets.QDialog, add_list_ui.Ui_Add_list):
             window.show_system_message("Список создан")
         else:
             window.show_system_message("Пожалуйста, введите другое название списка")
+        self.close()
+
+    def close_window(self):
+        self.close()
+
+    def closeEvent(self, event):
+        self.closeDialog.emit()
 
 
 class AddCategoryWindow(QtWidgets.QDialog, add_category_ui.Ui_Add_category):
+    closeDialog = QtCore.pyqtSignal()
+
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+        self.setFixedSize(389, 102)
         self.buttonBox.accepted.connect(self.ok_button)
+        self.buttonBox.rejected.connect(self.close_window)
         self.lineEdit.setFocus()
 
     def ok_button(self):
@@ -290,11 +326,20 @@ class AddCategoryWindow(QtWidgets.QDialog, add_category_ui.Ui_Add_category):
         else:
             window.show_system_message("Неправильное название для категории, возможно такая уже есть")
 
+    def close_window(self):
+        self.close()
+
+    def closeEvent(self, event):
+        self.closeDialog.emit()
+
 
 class AddItemWindow(QtWidgets.QDialog, add_item_ui.Ui_add_item):
+    closeDialog = QtCore.pyqtSignal()
+
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+        self.setFixedSize(598, 177)
         self.tableWidget.setColumnWidth(0, 300)
         self.tableWidget.setColumnWidth(1, 149)
         self.tableWidget.setColumnWidth(2, 120)
@@ -313,16 +358,15 @@ class AddItemWindow(QtWidgets.QDialog, add_item_ui.Ui_add_item):
 
     def add_item(self):
         """Adds item if there is no such item in db"""
-        try:
-            title = self.tableWidget.item(0, 0).text()
-            amount = self.tableWidget.item(0, 1).text()
-            weight = self.tableWidget.item(0, 2).text()
 
-            if title == '' or amount == '' or weight == '':
-                raise AttributeError
-        except AttributeError:
+        title = self.tableWidget.item(0, 0).text()
+        amount = self.tableWidget.item(0, 1).text()
+        weight = self.tableWidget.item(0, 2).text()
+
+        if title == '' or amount == '' or weight == '':
             window.show_system_message("Поля не заполнены")
             return
+
         try:
             category_id = self.select_category.currentData()
             amount = int(amount)
@@ -349,6 +393,9 @@ class AddItemWindow(QtWidgets.QDialog, add_item_ui.Ui_add_item):
 
         self.tableWidget.clearContents()
         self.tableWidget.setFocus()
+
+    def closeEvent(self, event):
+        self.closeDialog.emit()
 
 
 app = QtWidgets.QApplication(sys.argv)
