@@ -65,9 +65,13 @@ class MainWindow(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
 
     def add_item(self):
         """Opens dialog window for adding new item in category"""
-        dialog = AddItemWindow()
-        dialog.show()
-        dialog.exec()
+        roots_names = Database.db.get_roots_from_table_for_treeWidget(window.current_tree_name)
+        if roots_names:
+            dialog = AddItemWindow()
+            dialog.show()
+            dialog.exec()
+        else:
+            self.show_system_message("Сначала добавьте категорию")
 
     def delete_list(self):
         """Deletes current list from db and comboBox with names of trees"""
@@ -137,14 +141,16 @@ class MainWindow(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
         self.lcdNumber.update()
 
     def add_category_in_tree(self, category_id: int):
+        """Adds root from db in tree with data at role 0x100 {"id": int, "parent_id": None, "path": str}"""
         data = Database.db.get_data_by_id_from_table_for_treeWidget(category_id, self.current_tree_name)
         category_item = QtWidgets.QTreeWidgetItem([data[3]])
-        category_item.setData(0, 0x100, {"id": data[0], "path": data[2]})
+        category_item.setData(0, 0x100, {"id": data[0], "parent_id": None, "path": data[2]})
 
         category_item.setFlags(QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled)
         self.treeWidget.addTopLevelItem(category_item)
 
     def add_item_in_tree(self, item_id: int):
+        """Adds item from db in tree with data in column 0 at role 0x100 {"id": int, "parent_id": int, "path": str}"""
         data = Database.db.get_data_by_id_from_table_for_treeWidget(item_id, self.current_tree_name)
         data_dict = eval(data[3])
         element = QtWidgets.QTreeWidgetItem([str(data_dict["title"]), str(data_dict["amount"]),
@@ -162,6 +168,8 @@ class MainWindow(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
         self.lcd_number_update()
 
     def update_item(self):
+        """Update item after PyQT signal itemChanged in treeWidget.
+        Use @block_signals if you don't want the function to work """
         path = self.treeWidget.currentItem().data(0, 0x100)["path"]
         if not self.treeWidget.currentItem().parent():
             title = self.treeWidget.currentItem().text(0)
@@ -186,21 +194,22 @@ class MainWindow(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
         self.lcd_number_update()
 
     def delete_selected_item(self):
-        try:
+        """Deletes currentItem from db and tree"""
+        if self.treeWidget.currentItem():
             path = self.treeWidget.currentItem().data(0, 0x0100)["path"]
             Database.db.delete_element_from_table_for_treeWidget(path, self.current_tree_name)
             sip.delete(self.treeWidget.currentItem())
             self.treeWidget.update()
+            self.treeWidget.setCurrentItem(None)
             self.lcd_number_update()
-        except AttributeError:
+            self.show_system_message("Элемент удалён")
+        else:
             self.show_system_message("Выберите элемент для удаления")
-        except Exception as error:
-            self.show_system_message(error.__class__.__name__)
 
     @block_signals
     def select_item(self, *args):
-        """Changes color of item in tree (not for roots) and set data in role 0x200 if item is selected.
-        *args used because of error with QModelIndex."""
+        """Changes color of item in tree (not for roots) and set data in column 0 at role 0x200 if item is selected.
+        *args used because of unexpected QModelIndex in arguments when @block_signals used."""
         if self.treeWidget.currentItem().parent():
             if self.treeWidget.currentItem().data(0, 0x200):
                 self.treeWidget.currentItem().setData(0, 0x200, False)
@@ -226,7 +235,7 @@ class MainWindow(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
             if item not in visited and item.parent() == self.treeWidget.topLevelItem(index):
                 visited.append(item)
                 if not item.data(0, 0x200):
-                    self.treeWidget.currentItem().parent().setForeground(0, self.ColorForNotSelectedItem)
+                    self.treeWidget.topLevelItem(index).setForeground(0, self.ColorForNotSelectedItem)
                     break
             iterator += 1
         self.treeWidget.update()
@@ -269,6 +278,7 @@ class AddCategoryWindow(QtWidgets.QDialog, add_category_ui.Ui_Add_category):
         self.lineEdit.setFocus()
 
     def ok_button(self):
+        """Works if new root inserted into table"""
         category_name = self.lineEdit.text()
         if len(category_name) > 0 \
                 and Database.db.insert_new_root_into_table_for_treeWidget(category_name, window.current_tree_name):
@@ -302,6 +312,7 @@ class AddItemWindow(QtWidgets.QDialog, add_item_ui.Ui_add_item):
         self.close()
 
     def add_item(self):
+        """Adds item if there is no such item in db"""
         try:
             title = self.tableWidget.item(0, 0).text()
             amount = self.tableWidget.item(0, 1).text()
@@ -334,10 +345,11 @@ class AddItemWindow(QtWidgets.QDialog, add_item_ui.Ui_add_item):
             window.add_item_in_tree(item_id)
             window.show_system_message("Вещь добавлена в список")
         else:
-            window.show_system_message("Запись не сделана, возможно такая запись уже есть")
+            window.show_system_message("Запись не сделана, такая запись уже есть")
 
         self.tableWidget.clearContents()
         self.tableWidget.setFocus()
+
 
 app = QtWidgets.QApplication(sys.argv)
 window = MainWindow()

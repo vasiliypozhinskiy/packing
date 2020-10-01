@@ -169,7 +169,7 @@ class PackingDB:
                                                   table_name_for_system: str) -> bool:
         """Returns True if new item recorded, else False.
         The content must be of the following format: {'title': str, 'amount': int, 'weight': int}"""
-        pattern = r"\{'title': '[\w ]+', 'amount': \d+, 'weight': \d+\}"
+        pattern = r"\{'title': '.+', 'amount': \d+, 'weight': \d+\}"
         if re.findall(pattern, str(content)):
             self.cursor.execute(f"""SELECT id FROM {table_name_for_system} 
                                     WHERE parent_id = {parent_id} AND content = :content""",
@@ -251,7 +251,7 @@ class PackingDB:
                                                parent_id=None) -> bool:
         """Returns True if item updated, else False.
         For root content = title, for children in format {"title": str, "amount": int, "weight": int}"""
-        pattern = r"\{'title': '[\w ]+', 'amount': \d+, 'weight': \d+\}"
+        pattern = r"\{'title': '.+', 'amount': \d+, 'weight': \d+\}"
         if parent_id and re.findall(pattern, str(new_content)):
             self.cursor.execute(f"""SELECT id FROM {table_name_for_system} 
                                     WHERE parent_id = :parent_id AND content = :new_content""",
