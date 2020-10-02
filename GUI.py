@@ -87,6 +87,16 @@ class MainWindow(QtWidgets.QMainWindow, packing_ui.Ui_MainWindow):
         else:
             self.show_system_message("Сначала добавьте категорию")
 
+    def closeEvent(self, event):
+        """Closes all windows on exit"""
+        try:
+            self.add_item_dialog.close()
+        except AttributeError:
+            pass
+        self.add_category_dialog.close()
+        self.add_list_dialog.close()
+        self.close()
+
     def show_menu(self):
         self.tool_menu.exec_(self.toolButton.mapToGlobal(QtCore.QPoint(31, 0)))
 
