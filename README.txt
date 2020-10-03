@@ -12,3 +12,5 @@ If you find mistake in record, you can double-click on corresponding cell and ed
 Unnecessary thing or category you can delete by button "Удалить элемент". Select item with mouse and then click on button.
 Useless list can be deleted by button at the right of combobox. Use string "Удалить список".
 Deletes the list that is currently open in the program. Use it only if you are sure want to delete it.
+
+This program works on windows and linux. All data saves in sqlite3 database in file "packing.db".
