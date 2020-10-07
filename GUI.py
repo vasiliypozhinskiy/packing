@@ -3,10 +3,10 @@ import sys
 from PyQt5 import QtWidgets, QtCore, QtGui, sip
 
 import Database
-import add_category_ui
-import add_item_ui
-import add_list_ui
-import packing_ui
+from UI import packing_ui
+from UI import add_item_ui
+from UI import add_category_ui
+from UI import add_list_ui
 import functools
 
 
